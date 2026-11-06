@@ -1,0 +1,6 @@
+{
+  "name": "EdgeGen AI",
+  "description": "Premium AI image generator powered by resource-efficient diffusion models and classical computer vision enhancement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
