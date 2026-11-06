@@ -132,6 +132,34 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ---
 
+## 🚀 Deploying to Vercel
+
+EdgeGen AI is architected for instant deployment to Vercel:
+- **Frontend & Serverless API Proxy:** Hosted on Vercel's global Edge network.
+- **Inference Engine:** Runs on a Google Colab T4 GPU (or any remote GPU server) exposed via ngrok.
+- **Zero Client Configuration Needed:** Visitors and judges open the Vercel URL and generate images immediately—no manual URL pasting required.
+
+### Vercel Deployment Settings
+- **Framework Preset:** `Vite`
+- **Root Directory:** `./`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+- **Install Command:** `npm install`
+
+### Required Environment Variable
+In Vercel **Project Settings > Environment Variables**, add:
+- `COLAB_BACKEND_URL`: `https://your-active-session.ngrok-free.dev`
+
+### How It Works
+1. Vercel serves the optimized static React 19 application.
+2. Requests to `/api/*` are handled by Vercel Serverless Functions (`api/index.ts` and `api/[...path].ts`).
+3. The serverless proxy automatically adds the `ngrok-skip-browser-warning: true` header, handles CORS, and forwards generation requests directly to your running Colab GPU backend.
+4. **When Colab restarts:** Simply update `COLAB_BACKEND_URL` under Vercel **Project Settings > Environment Variables** and trigger a quick redeployment (or use the in-app GPU Server modal).
+5. **When Colab is disconnected:** The application displays a clean, user-friendly notice: *"Image generation is temporarily unavailable. Please try again later."* without crashing or displaying fake images.
+
+---
+
 ## 📄 Evaluation Report
 
 Full quantitative measurements, step-count ablations, latency, peak VRAM profiles, and CV enhancement deltas are documented in [`eval_P3_TeamID.md`](./eval_P3_TeamID.md).
+

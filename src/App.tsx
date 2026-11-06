@@ -144,9 +144,21 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Generation error:', err);
-      setGenerationError(
-        err.message || 'Generation failed. Verify the inference engine status or retry.'
-      );
+      const rawMsg = err.message || '';
+      if (
+        rawMsg.includes('unavailable') ||
+        rawMsg.includes('Offline') ||
+        rawMsg.includes('503') ||
+        rawMsg.includes('502') ||
+        rawMsg.includes('Failed to fetch') ||
+        rawMsg.includes('timed out') ||
+        rawMsg.includes('not responding') ||
+        rawMsg.includes('NetworkError')
+      ) {
+        setGenerationError('Image generation is temporarily unavailable. Please try again later.');
+      } else {
+        setGenerationError(rawMsg || 'Image generation is temporarily unavailable. Please try again later.');
+      }
       setIsGenerating(false);
     }
   };
@@ -166,14 +178,14 @@ export default function App() {
           finishJob(update);
         } else if (update.status === 'failed') {
           clearInterval(interval);
-          throw new Error(update.error || 'Inference engine reported a generation error');
+          throw new Error(update.error || 'Image generation is temporarily unavailable. Please try again later.');
         } else if (attempts >= maxAttempts) {
           clearInterval(interval);
-          throw new Error('Generation timed out. The server is under heavy load.');
+          throw new Error('Image generation is temporarily unavailable. Please try again later.');
         }
       } catch (err: any) {
         clearInterval(interval);
-        setGenerationError(err.message || 'Error communicating with generation engine');
+        setGenerationError('Image generation is temporarily unavailable. Please try again later.');
         setIsGenerating(false);
       }
     }, 1200);

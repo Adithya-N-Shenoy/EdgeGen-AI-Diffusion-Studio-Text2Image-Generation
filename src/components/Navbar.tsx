@@ -81,7 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* GitHub Link */}
           <a
-            href="https://github.com"
+            href="https://github.com/Adithya-N-Shenoy/EdgeGen-AI-Diffusion-Studio-Text2Image-Generation"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub Repository"

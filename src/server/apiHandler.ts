@@ -18,17 +18,27 @@ interface Job {
 const jobsDb = new Map<string, Job>();
 
 // Active configured remote backend URL in memory
-let configuredRemoteBackendUrl: string | null = process.env.BACKEND_URL || null;
+let configuredRemoteBackendUrl: string | null =
+  process.env.COLAB_BACKEND_URL || process.env.BACKEND_URL || null;
 
 export function normalizeTargetUrl(rawUrl: string | null | undefined): string | null {
-  if (!rawUrl || !rawUrl.trim()) return null;
-  let clean = rawUrl.trim();
+  if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) return null;
+  let clean = rawUrl.trim().replace(/^["']|["']$/g, '');
   clean = clean.replace(/\/+$/, '');
   clean = clean.replace(/\/api\/health$/, '');
   clean = clean.replace(/\/api\/models\/status$/, '');
   clean = clean.replace(/\/api\/generate$/, '');
   clean = clean.replace(/\/api$/, '');
   return clean || null;
+}
+
+export function getActiveBackendUrl(): string | null {
+  return (
+    normalizeTargetUrl(configuredRemoteBackendUrl) ||
+    normalizeTargetUrl(process.env.COLAB_BACKEND_URL) ||
+    normalizeTargetUrl(process.env.BACKEND_URL) ||
+    null
+  );
 }
 
 export function isValidProxyTarget(targetUrl: string): { valid: boolean; reason?: string } {
@@ -139,8 +149,9 @@ async function forwardRequestToRemote(
     });
     res.end(
       JSON.stringify({
-        detail: `Proxy error connecting to GPU backend at ${targetFullUrl}: ${err.message || 'Connection failed'}`,
+        detail: 'Image generation is temporarily unavailable. Please try again later.',
         error: err.message,
+        online: false,
       })
     );
     return true;
@@ -254,9 +265,9 @@ export async function handleApiRoute(req: IncomingMessage, res: ServerResponse):
     }
   }
 
-  // 3. Check for dynamic remote backend (from header or configured state)
+  // 3. Check for dynamic remote backend (from header, configured state, or COLAB_BACKEND_URL)
   const headerTarget = normalizeTargetUrl(req.headers['x-edgegen-backend'] as string);
-  const activeTarget = headerTarget || configuredRemoteBackendUrl;
+  const activeTarget = headerTarget || getActiveBackendUrl();
 
   if (activeTarget) {
     const forwarded = await forwardRequestToRemote(activeTarget, pathname, req, res);
@@ -265,13 +276,16 @@ export async function handleApiRoute(req: IncomingMessage, res: ServerResponse):
 
   // 4. Fallback Local /api/health
   if (pathname === '/api/health') {
+    const currentTarget = getActiveBackendUrl();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        status: 'healthy',
+        status: currentTarget ? 'connecting' : 'offline',
         service: 'EdgeGen AI API Proxy',
         fastapi_connected: false,
-        configured_remote: configuredRemoteBackendUrl,
+        configured_remote: currentTarget,
+        engine_ready: false,
+        message: 'Image generation is temporarily unavailable. Please try again later.',
         timestamp: Date.now(),
       })
     );
@@ -286,7 +300,7 @@ export async function handleApiRoute(req: IncomingMessage, res: ServerResponse):
         online: false,
         engine: 'SD-Turbo Distilled Diffusion',
         model: 'stabilityai/sd-turbo',
-        device: 'cpu',
+        device: 'cuda',
         precision: 'fp16',
         vram_allocated_mb: 0,
         memory_saving_enabled: true,
@@ -295,7 +309,7 @@ export async function handleApiRoute(req: IncomingMessage, res: ServerResponse):
         queue_length: 0,
         api_version: '1.0.0',
         hardware_summary:
-          'Inference Engine is offline. PyTorch GPU acceleration is required to execute SD-Turbo locally, or connect a remote GPU server.',
+          'Image generation is temporarily unavailable. Please try again later.',
       })
     );
     return;
@@ -334,8 +348,7 @@ export async function handleApiRoute(req: IncomingMessage, res: ServerResponse):
     res.writeHead(503, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        detail:
-          'Inference Backend Offline: EdgeGen AI requires a GPU worker running SD-Turbo (via FastAPI / Hugging Face Spaces / Google Colab). Open "GPU Server" in the navbar to connect a remote GPU.',
+        detail: 'Image generation is temporarily unavailable. Please try again later.',
       })
     );
     return;

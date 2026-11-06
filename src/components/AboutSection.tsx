@@ -21,7 +21,7 @@ export const AboutSection: React.FC = () => {
   const [teamName, setTeamName] = useState('EdgeGen Research Team');
   const [teamMembers, setTeamMembers] = useState('Shenoy & Engineering Collaborators');
   const [institution, setInstitution] = useState('Autonomous AI Computing Lab');
-  const [githubRepo, setGithubRepo] = useState('https://github.com/edgegen-ai/edgegen-p3');
+  const [githubRepo, setGithubRepo] = useState('https://github.com/Adithya-N-Shenoy/EdgeGen-AI-Diffusion-Studio-Text2Image-Generation');
 
   const pipelineStages = [
     {
